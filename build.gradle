@@ -26,6 +26,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'
+    implementation 'org.postgresql:postgresql:42.2.23'
 }
 
 tasks.named('test') {
