@@ -9,7 +9,6 @@ import java.io.Serializable;
 
 /**
  * Indicates the model for Users. It extended {@link UuidIdentifiedEntity} to get its UUID-based ID.
- *
  */
 @Getter
 @Builder
@@ -32,4 +31,11 @@ public class User extends UuidIdentifiedEntity implements Serializable {
 
     @Column(nullable = false)
     private String secondName;
+
+    public User update(User updatedUser) {
+        this.email = updatedUser.getEmail();
+        this.firstName = updatedUser.getFirstName();
+        this.secondName = updatedUser.getSecondName();
+        return this;
+    }
 }
