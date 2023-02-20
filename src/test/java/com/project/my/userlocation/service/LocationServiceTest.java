@@ -2,15 +2,18 @@ package com.project.my.userlocation.service;
 
 import com.project.my.userlocation.entity.Location;
 import com.project.my.userlocation.entity.User;
+import com.project.my.userlocation.repository.LocationRepository;
+import com.project.my.userlocation.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class LocationServiceTest {
@@ -20,6 +23,19 @@ class LocationServiceTest {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LocationRepository locationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+
+    @BeforeEach
+    void beforeEach() {
+        locationRepository.deleteAll();
+        userRepository.deleteAll();
+    }
 
     @Test
     @DisplayName("A new user is added and a Location created for it. Then location is added and its value is asserted.")
@@ -31,6 +47,18 @@ class LocationServiceTest {
         Location addedLocation = service.add(newLocation);
 
         assertLocationEquality(addedLocation, newLocation);
+    }
+
+    @Test
+    @DisplayName("A location is unique by its user and createdOn date. Add the duplicate location, must throw exception.")
+    void givenAUserAndNewLocationWithSameCreatedOn_whenAddIt_thenItMustThrowException() {
+        User user = saveAndGetNewUser();
+        Date createdOn = new Date();
+        Location newLocation = getNewLocationForUser(user, createdOn);
+        service.add(newLocation);
+        Location duplicateLocation = getNewLocationForUser(user, createdOn);
+
+        assertThrows(DataIntegrityViolationException.class, () -> service.add(duplicateLocation));
     }
 
     private void assertLocationEquality(Location addedLocation, Location newLocation) {
