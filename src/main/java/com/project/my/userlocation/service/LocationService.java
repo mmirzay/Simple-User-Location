@@ -11,9 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-
 /**
  * Service class for managing {@link Location}s of {@link User}s.
  */
@@ -27,5 +24,17 @@ public class LocationService {
     public Location add(Location location) {
         log.info("adding new location for user with id: [{}]", location.getUserId());
         return repository.save(location);
+    }
+
+    /**
+     * Return a page of the last locations of user, given user id.
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public Page<Location> getLast(String userId) {
+        log.info("getting last location of user with id: [{}]", userId);
+        return repository.findAllById_User_Id(userId,
+                PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "id.createdOn")));
     }
 }

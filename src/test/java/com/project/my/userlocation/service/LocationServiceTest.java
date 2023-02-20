@@ -10,10 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @SpringBootTest
 class LocationServiceTest {
@@ -63,6 +65,37 @@ class LocationServiceTest {
 
         assertLocationEquality(updatedLocation, duplicateLocation);
         assertEquals(1, locationRepository.count());
+    }
+
+    @Test
+    @DisplayName("Three location added for user and last location of user is returned and asserted.")
+    void givenAUserAndThreeLocations_whenGetLastLocation_thenItMustBeReturned() {
+        User user = saveAndGetNewUser();
+        Date lastDate = new Date();
+        Date oneDayBefore = Date.from(lastDate.toInstant().minus(1, ChronoUnit.DAYS));
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+        Location lastDateLocation = getNewLocationForUser(user, lastDate);
+        Location addedLastLocation = service.add(lastDateLocation);
+        Location oneDayBeforeLocation = getNewLocationForUser(user, oneDayBefore);
+        service.add(oneDayBeforeLocation);
+        Location twoDaysBeforeLocation = getNewLocationForUser(user, twoDaysBefore);
+        service.add(twoDaysBeforeLocation);
+        assertEquals(3, locationRepository.count());
+
+        Optional<Location> lastLocation = service.getLast(user.getId()).stream().findFirst();
+
+        assertTrue(lastLocation.isPresent());
+        assertLocationEquality(lastLocation.get(), addedLastLocation);
+    }
+
+    @Test
+    @DisplayName("For a user which has no location, getting last location, return nothing.")
+    void givenAUserWithNoLocationSaved_whenGetLastLocation_thenItMustReturnNothing() {
+        User user = saveAndGetNewUser();
+
+        Optional<Location> lastLocation = service.getLast(user.getId()).stream().findFirst();
+
+        assertFalse(lastLocation.isPresent());
     }
 
     private void assertLocationEquality(Location addedLocation, Location newLocation) {
