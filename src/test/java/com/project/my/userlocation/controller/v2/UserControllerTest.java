@@ -9,6 +9,7 @@ import com.project.my.userlocation.dto.out.UserLocationOutDto;
 import com.project.my.userlocation.dto.out.UserOutDto;
 import com.project.my.userlocation.repository.LocationRepository;
 import com.project.my.userlocation.repository.UserRepository;
+import com.project.my.userlocation.utility.DateUtil;
 import com.project.my.userlocation.utility.MessageTranslatorUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +49,7 @@ class UserControllerTest {
     private final String users = "/v2/users";
     private final String locations = "/v2/users/locations";
     private final String lastLocation = "/v2/users/{id}/locations-last";
+    private final String rangeOfLocations = "/v2/users/{id}/locations";
 
 
     @BeforeEach
@@ -310,6 +312,93 @@ class UserControllerTest {
         ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
         assertEquals(errorModel.getReasons().get(0),
                 MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound"));
+    }
+
+    @Test
+    @DisplayName("GET a range of locations of a user, then a list of locations is returned and response is OK.")
+    void givenAUserIdAndThreeLocations_whenGetARangeOfLocations_thenItMustBeReturned() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+        Date lastDate = new Date();
+        Date oneDayBefore = Date.from(lastDate.toInstant().minus(1, ChronoUnit.DAYS));
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+
+        UserLocationInDto lastUserLocationIndDto = getNewLocationForUser(userId, lastDate);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(lastUserLocationIndDto)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationInDto userLocationInDto2 = getNewLocationForUser(userId, oneDayBefore);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto2)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationInDto userLocationInDto3 = getNewLocationForUser(userId, twoDaysBefore);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto3)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        assertEquals(3, locationRepository.count());
+
+        String from = DateUtil.format(twoDaysBefore);
+        String to = DateUtil.format(lastDate);
+        MvcResult mvcResultWithSizeThree = mockMvc.perform(get(rangeOfLocations, userId)
+                        .param("from", from)
+                        .param("to", to))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResultWithSizeThree.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertNotNull(userLocationOutDto.getLocations());
+        assertEquals(3, userLocationOutDto.getLocations().size());
+
+        from = DateUtil.format(oneDayBefore);
+        to = DateUtil.format(lastDate);
+        MvcResult mvcResultWithSizeTwo = mockMvc.perform(get(rangeOfLocations, userId)
+                        .param("from", from)
+                        .param("to", to))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        userLocationOutDto = objectMapper.readValue(mvcResultWithSizeTwo.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertNotNull(userLocationOutDto.getLocations());
+        assertEquals(2, userLocationOutDto.getLocations().size());
+
+        from = DateUtil.format(lastDate);
+        to = DateUtil.format(lastDate);
+        MvcResult mvcResultWithSizeOne = mockMvc.perform(get(rangeOfLocations, userId)
+                        .param("from", from)
+                        .param("to", to))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        userLocationOutDto = objectMapper.readValue(mvcResultWithSizeOne.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertNotNull(userLocationOutDto.getLocations());
+        assertEquals(1, userLocationOutDto.getLocations().size());
+        assertEquals(userLocationOutDto.getLocations().get(0).getCreatedOn(), lastDate);
+    }
+
+    @Test
+    @DisplayName("GET a range of locations of a user when it is not exist, then status is NoContent.")
+    void givenAUserIdWithoutAnyLocations_whenGetARangeOfLocations_thenItMustReturnEmptyList() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+
+        String from = DateUtil.format(new Date());
+        String to = DateUtil.format(new Date());
+        MvcResult mvcResult = mockMvc.perform(get(rangeOfLocations, userId)
+                        .param("from", from)
+                        .param("to", to))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertEquals(userLocationOutDto.getUserId(), userId);
+        assertNotNull(userLocationOutDto.getLocations());
+        assertEquals(0, userLocationOutDto.getLocations().size());
     }
 
     private void assertUserDtoEquality(UserOutDto expected, UserInDto actual) {

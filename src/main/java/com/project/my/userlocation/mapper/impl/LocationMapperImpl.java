@@ -8,6 +8,9 @@ import com.project.my.userlocation.entity.User;
 import com.project.my.userlocation.mapper.LocationMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class LocationMapperImpl implements LocationMapper {
 
@@ -49,6 +52,20 @@ public class LocationMapperImpl implements LocationMapper {
                 .firstName(user.getFirstName())
                 .secondName(user.getSecondName())
                 .location(locationOutDto)
+                .build();
+    }
+
+    @Override
+    public UserLocationOutDto toLocationsListOutDto(String userId, List<Location> locations) {
+        List<LocationOutDto> locationOutDtos = locations.stream().map(l -> LocationOutDto.builder()
+                        .createdOn(l.getCreatedOn())
+                        .latitude(l.getLatitude())
+                        .longitude(l.getLongitude())
+                        .build())
+                .collect(Collectors.toList());
+        return UserLocationOutDto.builder()
+                .userId(userId)
+                .locations(locationOutDtos)
                 .build();
     }
 }

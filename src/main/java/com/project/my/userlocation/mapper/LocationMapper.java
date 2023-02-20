@@ -4,6 +4,8 @@ import com.project.my.userlocation.dto.in.UserLocationInDto;
 import com.project.my.userlocation.dto.out.UserLocationOutDto;
 import com.project.my.userlocation.entity.Location;
 
+import java.util.List;
+
 /**
  * It is a mapper class to map entity and DTOs of {@link Location}/.
  * <br/>
@@ -16,4 +18,5 @@ public interface LocationMapper {
 
     UserLocationOutDto toLastLocationOutDto(Location result);
 
+    UserLocationOutDto toLocationsListOutDto(String userId, List<Location> locations);
 }
