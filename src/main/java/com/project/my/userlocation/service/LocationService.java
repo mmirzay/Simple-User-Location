@@ -25,7 +25,7 @@ public class LocationService {
 
     @Transactional
     public Location add(Location location) {
-        log.info("adding new location for user with id: [{}]", location.getUser().getId());
+        log.info("adding new location for user with id: [{}]", location.getUserId());
         return repository.save(location);
     }
 }

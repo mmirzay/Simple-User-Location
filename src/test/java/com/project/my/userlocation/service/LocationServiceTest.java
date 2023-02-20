@@ -9,11 +9,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 class LocationServiceTest {
@@ -66,9 +66,9 @@ class LocationServiceTest {
     }
 
     private void assertLocationEquality(Location addedLocation, Location newLocation) {
-        assertNotNull(addedLocation.getUser().getId());
+        assertNotNull(addedLocation.getUserId());
         assertNotNull(addedLocation.getCreatedOn());
-        assertEquals(addedLocation.getUser().getId(), newLocation.getUser().getId());
+        assertEquals(addedLocation.getUserId(), newLocation.getUserId());
         assertEquals(addedLocation.getCreatedOn().toInstant(), newLocation.getCreatedOn().toInstant());
         assertEquals(addedLocation.getLatitude(), newLocation.getLatitude());
         assertEquals(addedLocation.getLongitude(), newLocation.getLongitude());
@@ -76,8 +76,10 @@ class LocationServiceTest {
 
     private Location getNewLocationForUser(User user, Date createdOn) {
         return Location.builder()
-                .user(user)
-                .createdOn(createdOn)
+                .id(Location.LocationId.builder()
+                        .user(user)
+                        .createdOn(createdOn)
+                        .build())
                 .latitude(52.25742342295784)
                 .longitude(10.540583401747602)
                 .build();
@@ -85,8 +87,10 @@ class LocationServiceTest {
 
     private Location getDuplicateLocationForUser(User user, Date createdOn) {
         return Location.builder()
-                .user(user)
-                .createdOn(createdOn)
+                .id(Location.LocationId.builder()
+                        .user(user)
+                        .createdOn(createdOn)
+                        .build())
                 .latitude(53.25742342295784)
                 .longitude(11.540583401747602)
                 .build();
