@@ -1,4 +1,4 @@
-package com.project.my.userlocation.controller;
+package com.project.my.userlocation.controller.v2;
 
 import com.project.my.userlocation.dto.UserInDto;
 import com.project.my.userlocation.dto.UserOutDto;
@@ -14,7 +14,7 @@ import javax.validation.Valid;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/v2/users")
 public class UserController {
     private final UserService service;
     private final UserMapper mapper;
