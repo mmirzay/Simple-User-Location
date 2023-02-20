@@ -1,9 +1,13 @@
 package com.project.my.userlocation.controller.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.my.userlocation.dto.ErrorModel;
-import com.project.my.userlocation.dto.UserInDto;
-import com.project.my.userlocation.dto.UserOutDto;
+import com.project.my.userlocation.dto.in.LocationInDto;
+import com.project.my.userlocation.dto.in.UserInDto;
+import com.project.my.userlocation.dto.in.UserLocationInDto;
+import com.project.my.userlocation.dto.out.ErrorModel;
+import com.project.my.userlocation.dto.out.UserLocationOutDto;
+import com.project.my.userlocation.dto.out.UserOutDto;
+import com.project.my.userlocation.repository.LocationRepository;
 import com.project.my.userlocation.repository.UserRepository;
 import com.project.my.userlocation.utility.MessageTranslatorUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +20,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,11 +43,16 @@ class UserControllerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private LocationRepository locationRepository;
+
     private final String users = "/v2/users";
+    private final String locations = "/v2/users/locations";
 
 
     @BeforeEach
     void beforeEach() {
+        locationRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -129,6 +143,107 @@ class UserControllerTest {
         assertEquals(errorModel.getReasons().get(0), MessageTranslatorUtil.getText("service.user.get.notFound"));
     }
 
+    @Test
+    @DisplayName("POST a new Location for an exist user and response status is 201.")
+    void givenAUserIdAndNewLocation_whenPostLocations_thenItMustBeAdded() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+        Date createdOn = new Date();
+        UserLocationInDto userLocationInDto = getNewLocationForUser(userId, createdOn);
+
+        MvcResult mvcResult = mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertUserLocationsDtoEquality(userLocationOutDto, userLocationInDto);
+        assertEquals(1, locationRepository.count());
+    }
+
+    @Test
+    @DisplayName("POST a new location for an invalid user ID, then response is NotFound error.")
+    void givenInvalidUserIdAndNewLocation_whenPostLocations_thenItResponsesError() throws Exception {
+        String userId = "Invalid User ID";
+        Date createdOn = new Date();
+        UserLocationInDto userLocationInDto = getNewLocationForUser(userId, createdOn);
+
+        MvcResult mvcResult = mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorTitle").exists())
+                .andExpect(jsonPath("$.errorReasons").exists())
+                .andReturn();
+
+        ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
+        assertEquals(errorModel.getTitle(), MessageTranslatorUtil.getText("exception.handler.NotFoundException.title"));
+        assertEquals(errorModel.getReasons().get(0), MessageTranslatorUtil.getText("service.user.get.notFound"));
+    }
+
+    @Test
+    @DisplayName("POST a new location with null values, then it responses binding error and message is asserted.")
+    void givenIANewUserLocationWithNullValues_whenPostLocations_thenItResponsesError() throws Exception {
+        UserLocationInDto userLocationInDto = getLocationWithNullValues();
+
+        MvcResult mvcResult = mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorTitle").exists())
+                .andExpect(jsonPath("$.errorReasons").exists())
+                .andReturn();
+
+        ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
+        assertEquals(errorModel.getTitle(),
+                MessageTranslatorUtil.getText("exception.handler.BindException.title"));
+    }
+
+    @Test
+    @DisplayName("POST a new location with createdOn date of future date, then it responses binding error and message is asserted.")
+    void givenIANewUserLocationWithCreatedOnDateOfFuture_whenPostLocations_thenItResponsesError() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+        Date createdOn = Date.from(new Date().toInstant().plus(1, ChronoUnit.DAYS));
+        UserLocationInDto userLocationInDto = getNewLocationForUser(userId, createdOn);
+
+        MvcResult mvcResult = mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorTitle").exists())
+                .andExpect(jsonPath("$.errorReasons").exists())
+                .andReturn();
+
+        ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
+        assertEquals(errorModel.getReasons().get(0),
+                MessageTranslatorUtil.getText("in.userLocation.createdOn.notPastOrPresentDate"));
+    }
+
+    @Test
+    @DisplayName("POST a new Location with duplicate createdOn date and it responses updated location.")
+    void givenAUserIdAndNewLocationWithDuplicateCreatedOnDate_whenPostLocations_thenItMustBeUpdated() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+        Date createdOn = new Date();
+        UserLocationInDto userLocationInDto = getNewLocationForUser(userId, createdOn);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationInDto duplicateLocation = getNewLocationWithDuplicateCreatedOn(userId, createdOn);
+
+        MvcResult mvcResult = mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(duplicateLocation)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertUserLocationsDtoEquality(userLocationOutDto, duplicateLocation);
+        assertEquals(1, locationRepository.count());
+    }
+
     private void assertUserDtoEquality(UserOutDto expected, UserInDto actual) {
         assertNotNull(expected.getUserId());
         assertEquals(expected.getEmail(), actual.getEmail());
@@ -177,5 +292,40 @@ class UserControllerTest {
                 .andReturn();
 
         return objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserOutDto.class);
+    }
+
+    private UserLocationInDto getNewLocationForUser(String userId, Date createdOn) {
+        return UserLocationInDto.builder()
+                .userId(userId)
+                .createdOn(createdOn)
+                .location(LocationInDto.builder()
+                        .latitude(52.25742342295784)
+                        .longitude(10.540583401747602)
+                        .build())
+                .build();
+    }
+
+    private void assertUserLocationsDtoEquality(UserLocationOutDto userLocationOutDto, UserLocationInDto userLocationInDto) {
+        assertNotNull(userLocationOutDto.getUserId());
+        assertNotNull(userLocationOutDto.getLocation());
+        assertEquals(userLocationOutDto.getLocation().getCreatedOn(), userLocationInDto.getCreatedOn());
+        assertEquals(userLocationOutDto.getLocation().getLatitude(), userLocationInDto.getLocation().getLatitude());
+        assertEquals(userLocationOutDto.getLocation().getLongitude(), userLocationInDto.getLocation().getLongitude());
+    }
+
+    private UserLocationInDto getLocationWithNullValues() {
+        return UserLocationInDto.builder().build();
+    }
+
+    private UserLocationInDto getNewLocationWithDuplicateCreatedOn(String userId, Date createdOn) {
+        return UserLocationInDto.builder()
+                .userId(userId)
+                .createdOn(createdOn)
+                .location(LocationInDto.builder()
+                        .latitude(53.25742342295784)
+                        .longitude(11.540583401747602)
+                        .build())
+                .build();
+
     }
 }
