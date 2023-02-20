@@ -5,11 +5,12 @@ import com.project.my.userlocation.exception.DateFormatException;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.utility.BindingFailureTranslatorUtil;
 import com.project.my.userlocation.utility.DbExceptionTranslatorUtil;
+import com.project.my.userlocation.utility.HttpFormatExceptionTranslatorUtil;
 import com.project.my.userlocation.utility.MessageTranslatorUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.postgresql.util.PSQLException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
@@ -36,7 +37,7 @@ public class ExceptionHandlerAdvice {
         log.error(ex.getMessage());
         return ErrorModel.builder()
                 .title(MessageTranslatorUtil.getText("exception.handler.HttpMessageNotReadableException.title"))
-                .reasons(List.of(MessageTranslatorUtil.getText("exception.handler.HttpMessageNotReadableException.message")))
+                .reasons(List.of(HttpFormatExceptionTranslatorUtil.findCause(ex.getMessage())))
                 .build();
     }
 
@@ -50,9 +51,9 @@ public class ExceptionHandlerAdvice {
                 .build();
     }
 
-    @ExceptionHandler({PSQLException.class})
+    @ExceptionHandler({DataAccessException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorModel handlingDbException(PSQLException ex) {
+    public ErrorModel handlingDbException(DataAccessException ex) {
         log.error("database exception thrown : [{}]", ex.getMessage());
         return ErrorModel.builder()
                 .title(MessageTranslatorUtil.getText("exception.handler.DataBaseException.title"))
@@ -76,6 +77,16 @@ public class ExceptionHandlerAdvice {
         log.error("date format exception : [{}]", ex.getMessage());
         return ErrorModel.builder()
                 .title(MessageTranslatorUtil.getText("exception.handler.DateFormatException.title"))
+                .reasons(List.of(ex.getMessage()))
+                .build();
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorModel handlingMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
+        log.error("Required request parameter exception : [{}]", ex.getMessage());
+        return ErrorModel.builder()
+                .title(MessageTranslatorUtil.getText("exception.handler.MissingServletRequestParameterException.title"))
                 .reasons(List.of(ex.getMessage()))
                 .build();
     }
