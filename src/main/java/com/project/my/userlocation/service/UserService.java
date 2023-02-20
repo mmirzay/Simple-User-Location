@@ -1,5 +1,6 @@
 package com.project.my.userlocation.service;
 
+import com.project.my.userlocation.entity.Location;
 import com.project.my.userlocation.entity.User;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.repository.UserRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class UserService {
     private final UserRepository userRepository;
+    private final LocationService locationService;
 
     @Transactional
     public User addOrUpdate(User user) {
@@ -38,5 +40,16 @@ public class UserService {
     private User getUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(MessageTranslatorUtil.getText("service.user.get.notFound")));
+    }
+
+    @Transactional
+    public Location addLocationForUser(String userId, Location location) {
+        log.info("adding new location for user with id: [{}]", userId);
+        User user = getUserById(userId);
+        location.setId(Location.LocationId.builder()
+                .user(user)
+                .createdOn(location.getCreatedOn())
+                .build());
+        return locationService.add(location);
     }
 }
