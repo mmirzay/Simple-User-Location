@@ -30,5 +30,4 @@ public class ErrorModel {
 
     @JsonProperty("errorReasons")
     private List<String> reasons;
-
 }

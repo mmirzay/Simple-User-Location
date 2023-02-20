@@ -15,7 +15,6 @@ import java.util.TimeZone;
 @UtilityClass
 public class DateUtil {
 
-
     public static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_TIME_PATTERN);

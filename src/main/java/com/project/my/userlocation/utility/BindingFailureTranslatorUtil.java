@@ -31,5 +31,4 @@ public class BindingFailureTranslatorUtil {
                 })
                 .collect(Collectors.toList());
     }
-
 }

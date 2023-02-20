@@ -20,5 +20,4 @@ public class UuidIdentifierGenerator implements IdentifierGenerator {
 	public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
 		return UUID.randomUUID().toString();
 	}
-	
 }

@@ -35,5 +35,4 @@ public class UserInDto {
 
     @NotEmpty(message = "in.user.secondName.notEmpty")
     private String secondName;
-
 }

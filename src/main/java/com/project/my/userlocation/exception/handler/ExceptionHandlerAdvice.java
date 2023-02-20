@@ -79,5 +79,4 @@ public class ExceptionHandlerAdvice {
                 .reasons(List.of(ex.getMessage()))
                 .build();
     }
-
 }

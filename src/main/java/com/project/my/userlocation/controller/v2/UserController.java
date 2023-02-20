@@ -46,7 +46,6 @@ public class UserController {
         return new ResponseEntity<>(createdLocationOutDto, HttpStatus.CREATED);
     }
 
-
     @Operation(summary = "Endpoint for get last Location info of user if exist.")
     @GetMapping("/{id}/locations-last")
     public ResponseEntity<UserLocationOutDto> getLastLocation(@PathVariable String id) {
