@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -125,6 +126,35 @@ class UserServiceTest {
         assertNotEquals(addedLocation.getLatitude(), updatedLocation.getLatitude());
         assertNotEquals(addedLocation.getLongitude(), updatedLocation.getLongitude());
         assertEquals(1, locationRepository.count());
+    }
+
+    @Test
+    @DisplayName("Two locations added for user. Then Last location for user with given Id must be return.")
+    void givenAUserId_whenGetExistLastLocation_thenItMustReturned() {
+        String userId = saveNewUserAndGetUserId();
+        Date firstLocationCreatedOn = new Date();
+        Date lastLocationCreatedOn = Date.from(firstLocationCreatedOn.toInstant().plus(1, ChronoUnit.DAYS));
+        Location lastLocation = getNewLocationWithCreatedOn(lastLocationCreatedOn);
+        service.addLocationForUser(userId, lastLocation);
+
+        Location firstLocation = getNewLocationWithCreatedOn(firstLocationCreatedOn);
+        service.addLocationForUser(userId, firstLocation);
+
+        assertEquals(2, locationRepository.count());
+
+        Location gotLastLocation = service.getLastLocation(userId);
+
+        assertEquals(gotLastLocation.getCreatedOn().toInstant(), lastLocation.getCreatedOn().toInstant());
+        assertNotEquals(gotLastLocation.getCreatedOn().toInstant(), firstLocation.getCreatedOn().toInstant());
+    }
+
+    @Test
+    @DisplayName("If user has no location, when getting last location, then it must throw an exception.")
+    void givenAUserIdWithNoLocation_whenGetLastLocation_thenItMustThrowException() {
+        String userId = saveNewUserAndGetUserId();
+
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> service.getLastLocation(userId));
+        assertEquals(MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound"), exception.getMessage());
     }
 
     private void assertUserEquality(User expected, User actual) {

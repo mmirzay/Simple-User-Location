@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Service class for managing {@link User}s.
  */
@@ -51,5 +53,13 @@ public class UserService {
                 .createdOn(location.getCreatedOn())
                 .build());
         return locationService.add(location);
+    }
+
+    @Transactional
+    public Location getLastLocation(String userId) {
+        log.info("getting last location of user with id: [{}]", userId);
+        getUserById(userId);
+        Optional<Location> location = locationService.getLast(userId).stream().findFirst();
+        return location.orElseThrow(() -> new NotFoundException(MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound")));
     }
 }
