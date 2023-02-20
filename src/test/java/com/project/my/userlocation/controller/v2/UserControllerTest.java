@@ -401,6 +401,24 @@ class UserControllerTest {
         assertEquals(0, userLocationOutDto.getLocations().size());
     }
 
+    @Test
+    @DisplayName("GET a range of locations of a user when the date range is not valid, then responses error.")
+    void givenAUserId_whenGetARangeOfLocationsWithInvalidDateRange_thenItMustResponsesError() throws Exception {
+        String userId = saveNewUserAndGetUserOutDto().getUserId();
+
+        MvcResult mvcResult = mockMvc.perform(get(rangeOfLocations, userId)
+                        .param("from", String.valueOf(new Date()))
+                        .param("to", String.valueOf(new Date())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorTitle").exists())
+                .andExpect(jsonPath("$.errorReasons").exists())
+                .andReturn();
+
+        ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
+        assertEquals(errorModel.getTitle(), MessageTranslatorUtil.getText("exception.handler.DateFormatException.title"));
+        assertTrue(errorModel.getReasons().get(0).contains("Date format"));
+    }
+
     private void assertUserDtoEquality(UserOutDto expected, UserInDto actual) {
         assertNotNull(expected.getUserId());
         assertEquals(expected.getEmail(), actual.getEmail());

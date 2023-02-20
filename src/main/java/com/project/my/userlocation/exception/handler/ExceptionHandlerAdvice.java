@@ -1,6 +1,7 @@
 package com.project.my.userlocation.exception.handler;
 
 import com.project.my.userlocation.dto.out.ErrorModel;
+import com.project.my.userlocation.exception.DateFormatException;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.utility.BindingFailureTranslatorUtil;
 import com.project.my.userlocation.utility.DbExceptionTranslatorUtil;
@@ -12,6 +13,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -64,6 +66,16 @@ public class ExceptionHandlerAdvice {
         log.error("result not found : [{}]", ex.getMessage());
         return ErrorModel.builder()
                 .title(MessageTranslatorUtil.getText("exception.handler.NotFoundException.title"))
+                .reasons(List.of(ex.getMessage()))
+                .build();
+    }
+
+    @ExceptionHandler({DateFormatException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorModel handlingDateFormatException(DateFormatException ex) {
+        log.error("date format exception : [{}]", ex.getMessage());
+        return ErrorModel.builder()
+                .title(MessageTranslatorUtil.getText("exception.handler.DateFormatException.title"))
                 .reasons(List.of(ex.getMessage()))
                 .build();
     }
