@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -96,6 +97,43 @@ class LocationServiceTest {
         Optional<Location> lastLocation = service.getLast(user.getId()).stream().findFirst();
 
         assertFalse(lastLocation.isPresent());
+    }
+
+    @Test
+    @DisplayName("Three location added for user and all locations of user based on range of date are returned and asserted.")
+    void givenAUserAndThreeLocations_whenGetLocationsBasedOnRangeOfDate_thenListMustBeReturned() {
+        User user = saveAndGetNewUser();
+        Date lastDate = new Date();
+        Date oneDayBefore = Date.from(lastDate.toInstant().minus(1, ChronoUnit.DAYS));
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+        Location lastDateLocation = getNewLocationForUser(user, lastDate);
+        service.add(lastDateLocation);
+        Location oneDayBeforeLocation = getNewLocationForUser(user, oneDayBefore);
+        service.add(oneDayBeforeLocation);
+        Location twoDaysBeforeLocation = getNewLocationForUser(user, twoDaysBefore);
+        service.add(twoDaysBeforeLocation);
+        assertEquals(3, locationRepository.count());
+
+        List<Location> locationByRange = service.getLocationByRange(user.getId(), twoDaysBefore, lastDate);
+        assertEquals(3, locationByRange.size());
+
+        locationByRange = service.getLocationByRange(user.getId(), oneDayBefore, lastDate);
+        assertEquals(2, locationByRange.size());
+
+        locationByRange = service.getLocationByRange(user.getId(), lastDate, lastDate);
+        assertEquals(1, locationByRange.size());
+    }
+
+    @Test
+    @DisplayName("Given a user with no location, when getting locations by range of dates, an empty list is returned.")
+    void givenAUserWithNoLocations_whenGetLocationsBasedOnRangeOfDate_thenEmptyListMustBeReturned() {
+        User user = saveAndGetNewUser();
+        Date lastDate = new Date();
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+
+        List<Location> locationByRange = service.getLocationByRange(user.getId(), twoDaysBefore, lastDate);
+
+        assertTrue(locationByRange.isEmpty());
     }
 
     private void assertLocationEquality(Location addedLocation, Location newLocation) {

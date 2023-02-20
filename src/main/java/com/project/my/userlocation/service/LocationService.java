@@ -11,6 +11,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
+import java.util.List;
+
 /**
  * Service class for managing {@link Location}s of {@link User}s.
  */
@@ -29,12 +32,26 @@ public class LocationService {
     /**
      * Return a page of the last locations of user, given user id.
      * @param userId
-     * @return
+     * @return page of locations order by createdOn date DESC.
      */
     @Transactional
     public Page<Location> getLast(String userId) {
         log.info("getting last location of user with id: [{}]", userId);
         return repository.findAllById_User_Id(userId,
                 PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "id.createdOn")));
+    }
+
+    /**
+     * It returns an ordered list of locations based on an inclusive range of createdOn dates for user.
+     * If locations are not exists, an empty list is returned.
+     * @param userId
+     * @param from
+     * @param to
+     * @return list of location based on a range of createdOn dates.
+     */
+    @Transactional
+    public List<Location> getLocationByRange(String userId, Date from, Date to) {
+        log.info("getting locations of user with id: [{}] by range from: [{}] to: [{}]", userId, from, to);
+        return repository.findAllById_User_IdAndAndId_CreatedOnBetweenOrderById_CreatedOn(userId, from, to);
     }
 }
