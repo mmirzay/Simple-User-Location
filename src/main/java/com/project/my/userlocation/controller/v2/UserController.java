@@ -5,6 +5,7 @@ import com.project.my.userlocation.dto.UserOutDto;
 import com.project.my.userlocation.entity.User;
 import com.project.my.userlocation.mapper.UserMapper;
 import com.project.my.userlocation.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class UserController {
     private final UserService service;
     private final UserMapper mapper;
 
+    @Operation(summary = "Endpoint for add or update user info.")
     @PutMapping
     public ResponseEntity<UserOutDto> addOrUpdate(@RequestBody @Valid UserInDto userInDto) {
         User user = mapper.toEntity(userInDto);
