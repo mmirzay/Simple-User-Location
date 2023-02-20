@@ -1,4 +1,4 @@
-package com.project.my.userlocation.dto;
+package com.project.my.userlocation.dto.out;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.project.my.userlocation.entity.Location;

@@ -1,6 +1,6 @@
 package com.project.my.userlocation.exception.handler;
 
-import com.project.my.userlocation.dto.ErrorModel;
+import com.project.my.userlocation.dto.out.ErrorModel;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.utility.BindingFailureTranslatorUtil;
 import com.project.my.userlocation.utility.DbExceptionTranslatorUtil;

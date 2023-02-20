@@ -31,7 +31,7 @@ public class LocationService {
 
     /**
      * Return a page of the last locations of user, given user id.
-     * @param userId
+     * @param userId id of user to get last location
      * @return page of locations order by createdOn date DESC.
      */
     @Transactional
@@ -44,9 +44,9 @@ public class LocationService {
     /**
      * It returns an ordered list of locations based on an inclusive range of createdOn dates for user.
      * If locations are not exists, an empty list is returned.
-     * @param userId
-     * @param from
-     * @param to
+     * @param userId id of user to get locations
+     * @param from beginning of the date range (inclusive)
+     * @param to end of the date range (inclusive)
      * @return list of location based on a range of createdOn dates.
      */
     @Transactional

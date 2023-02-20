@@ -1,4 +1,4 @@
-package com.project.my.userlocation.entity;
+package com.project.my.userlocation.entity.identifier;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;

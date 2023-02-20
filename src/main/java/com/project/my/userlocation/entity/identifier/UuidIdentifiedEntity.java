@@ -1,4 +1,4 @@
-package com.project.my.userlocation.entity;
+package com.project.my.userlocation.entity.identifier;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,7 +25,7 @@ public abstract class UuidIdentifiedEntity {
 
     @Id
     @GeneratedValue(generator = UuidIdentifierGenerator.NAME)
-    @GenericGenerator(name = UuidIdentifierGenerator.NAME, strategy = "com.project.my.userlocation.entity.UuidIdentifierGenerator")
+    @GenericGenerator(name = UuidIdentifierGenerator.NAME, strategy = "com.project.my.userlocation.entity.identifier.UuidIdentifierGenerator")
     @Column(length = DB_ID_MAX_SIZE)
     protected String id;
 }

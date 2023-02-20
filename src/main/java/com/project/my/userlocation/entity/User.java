@@ -1,5 +1,6 @@
 package com.project.my.userlocation.entity;
 
+import com.project.my.userlocation.entity.identifier.UuidIdentifiedEntity;
 import lombok.*;
 
 import javax.persistence.Column;

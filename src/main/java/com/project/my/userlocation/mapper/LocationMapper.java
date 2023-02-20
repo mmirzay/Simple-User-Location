@@ -1,7 +1,7 @@
 package com.project.my.userlocation.mapper;
 
-import com.project.my.userlocation.dto.UserLocationInDto;
-import com.project.my.userlocation.dto.UserLocationOutDto;
+import com.project.my.userlocation.dto.in.UserLocationInDto;
+import com.project.my.userlocation.dto.out.UserLocationOutDto;
 import com.project.my.userlocation.entity.Location;
 
 /**
