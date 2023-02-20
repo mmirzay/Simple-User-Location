@@ -14,6 +14,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity(name = "locations")
+@Table(indexes = @Index(name = "uin_user_id_createdOn", columnList = "user_id, createdOn", unique = true))
 public class Location extends UuidIdentifiedEntity {
 
     @ManyToOne(optional = false)
