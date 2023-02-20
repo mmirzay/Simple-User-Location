@@ -36,13 +36,4 @@ public class UserInDto {
     @NotEmpty(message = "in.user.secondName.notEmpty")
     private String secondName;
 
-    public User toUser() {
-        User user = User.builder()
-                .email(this.email)
-                .firstName(this.firstName)
-                .secondName(this.secondName)
-                .build();
-        user.setId(this.userId);
-        return user;
-    }
 }
