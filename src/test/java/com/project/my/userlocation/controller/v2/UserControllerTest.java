@@ -23,10 +23,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +47,7 @@ class UserControllerTest {
 
     private final String users = "/v2/users";
     private final String locations = "/v2/users/locations";
+    private final String lastLocation = "/v2/users/{id}/locations-last";
 
 
     @BeforeEach
@@ -242,6 +242,74 @@ class UserControllerTest {
         UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
         assertUserLocationsDtoEquality(userLocationOutDto, duplicateLocation);
         assertEquals(1, locationRepository.count());
+    }
+
+    @Test
+    @DisplayName("GET last location of a user when exist then response is OK.")
+    void givenAUserIdAndThreeLocations_whenGetLastLocation_thenItMustBeReturned() throws Exception {
+        UserOutDto userOutDto = saveNewUserAndGetUserOutDto();
+        String userId = userOutDto.getUserId();
+        Date lastDate = new Date();
+        Date oneDayBefore = Date.from(lastDate.toInstant().minus(1, ChronoUnit.DAYS));
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+
+        UserLocationInDto lastUserLocationIndDto = getNewLocationForUser(userId, lastDate);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(lastUserLocationIndDto)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationInDto userLocationInDto2 = getNewLocationForUser(userId, oneDayBefore);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto2)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserLocationInDto userLocationInDto3 = getNewLocationForUser(userId, twoDaysBefore);
+        mockMvc.perform(post(locations)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userLocationInDto3)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        assertEquals(3, locationRepository.count());
+
+        MvcResult mvcResult = mockMvc.perform(get(lastLocation, userId))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        UserLocationOutDto userLocationOutDto = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), UserLocationOutDto.class);
+        assertEquals(userLocationOutDto.getUserId(), userOutDto.getUserId());
+        assertNotNull(userLocationOutDto.getEmail());
+        assertEquals(userLocationOutDto.getEmail(), userOutDto.getEmail());
+        assertNotNull(userLocationOutDto.getFirstName());
+        assertEquals(userLocationOutDto.getFirstName(), userOutDto.getFirstName());
+        assertNotNull(userLocationOutDto.getSecondName());
+        assertEquals(userLocationOutDto.getSecondName(), userOutDto.getSecondName());
+        assertNull(userLocationOutDto.getLocation().getCreatedOn());
+        assertEquals(userLocationOutDto.getLocation().getLatitude(), lastUserLocationIndDto.getLocation().getLatitude());
+        assertEquals(userLocationOutDto.getLocation().getLongitude(), lastUserLocationIndDto.getLocation().getLongitude());
+    }
+
+    @Test
+    @DisplayName("GET last location of a user when there is no location then response is NotFound.")
+    void givenAUserIdWithoutAnyLocations_whenGetLastLocation_thenItMustBeNoContent() throws Exception {
+        UserOutDto userOutDto = saveNewUserAndGetUserOutDto();
+        String userId = userOutDto.getUserId();
+
+        assertEquals(0, locationRepository.count());
+
+        MvcResult mvcResult = mockMvc.perform(get(lastLocation, userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorTitle").exists())
+                .andExpect(jsonPath("$.errorReasons").exists())
+                .andReturn();
+
+        ErrorModel errorModel = objectMapper.readValue(mvcResult.getResponse().getContentAsByteArray(), ErrorModel.class);
+        assertEquals(errorModel.getReasons().get(0),
+                MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound"));
     }
 
     private void assertUserDtoEquality(UserOutDto expected, UserInDto actual) {

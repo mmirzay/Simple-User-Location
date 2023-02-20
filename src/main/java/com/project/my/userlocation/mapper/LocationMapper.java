@@ -14,4 +14,6 @@ public interface LocationMapper {
 
     UserLocationOutDto toCreatedLocationOutDto(Location result);
 
+    UserLocationOutDto toLastLocationOutDto(Location result);
+
 }
