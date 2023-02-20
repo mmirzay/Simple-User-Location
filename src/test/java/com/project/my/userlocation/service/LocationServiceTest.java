@@ -50,15 +50,19 @@ class LocationServiceTest {
     }
 
     @Test
-    @DisplayName("A location is unique by its user and createdOn date. Add the duplicate location, must throw exception.")
-    void givenAUserAndNewLocationWithSameCreatedOn_whenAddIt_thenItMustThrowException() {
+    @DisplayName("A location is unique by its user and createdOn date. Add the duplicate location, must result updating.")
+    void givenAUserAndNewLocationWithSameCreatedOn_whenAddIt_thenItMustBeUpdated() {
         User user = saveAndGetNewUser();
         Date createdOn = new Date();
         Location newLocation = getNewLocationForUser(user, createdOn);
-        service.add(newLocation);
-        Location duplicateLocation = getNewLocationForUser(user, createdOn);
+        Location addedLocation = service.add(newLocation);
+        assertLocationEquality(addedLocation, newLocation);
 
-        assertThrows(DataIntegrityViolationException.class, () -> service.add(duplicateLocation));
+        Location duplicateLocation = getDuplicateLocationForUser(user, createdOn);
+        Location updatedLocation = service.add(duplicateLocation);
+
+        assertLocationEquality(updatedLocation, duplicateLocation);
+        assertEquals(1, locationRepository.count());
     }
 
     private void assertLocationEquality(Location addedLocation, Location newLocation) {
@@ -76,6 +80,15 @@ class LocationServiceTest {
                 .createdOn(createdOn)
                 .latitude(52.25742342295784)
                 .longitude(10.540583401747602)
+                .build();
+    }
+
+    private Location getDuplicateLocationForUser(User user, Date createdOn) {
+        return Location.builder()
+                .user(user)
+                .createdOn(createdOn)
+                .latitude(53.25742342295784)
+                .longitude(11.540583401747602)
                 .build();
     }
 
