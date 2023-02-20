@@ -5,6 +5,7 @@ import com.project.my.userlocation.entity.User;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.repository.LocationRepository;
 import com.project.my.userlocation.repository.UserRepository;
+import com.project.my.userlocation.utility.DateUtil;
 import com.project.my.userlocation.utility.MessageTranslatorUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -155,6 +157,53 @@ class UserServiceTest {
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> service.getLastLocation(userId));
         assertEquals(MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound"), exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Three locations added for user. When getting locations by range of date, then a list must be returned.")
+    void givenAUserIdWithThreeLocation_whenGetLocationsByRangeOfDate_thenAListMustReturned() {
+        String userId = saveNewUserAndGetUserId();
+        Date lastDate = new Date();
+        Date oneDayBefore = Date.from(lastDate.toInstant().minus(1, ChronoUnit.DAYS));
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+        Location lastLocation = getNewLocationWithCreatedOn(lastDate);
+        service.addLocationForUser(userId, lastLocation);
+
+        Location oneDayBeforeLocation = getNewLocationWithCreatedOn(oneDayBefore);
+        service.addLocationForUser(userId, oneDayBeforeLocation);
+
+        Location twoDaysBeforeLocation = getNewLocationWithCreatedOn(twoDaysBefore);
+        service.addLocationForUser(userId, twoDaysBeforeLocation);
+
+        assertEquals(3, locationRepository.count());
+
+        String from = DateUtil.format(twoDaysBefore);
+        String to = DateUtil.format(lastDate);
+        List<Location> locations = service.getLocationsByRange(userId, from, to);
+        assertEquals(3, locations.size());
+
+        from = DateUtil.format(oneDayBefore);
+        to = DateUtil.format(lastDate);
+        locations = service.getLocationsByRange(userId, from, to);
+        assertEquals(2, locations.size());
+
+        from = DateUtil.format(lastDate);
+        to = DateUtil.format(lastDate);
+        locations = service.getLocationsByRange(userId, from, to);
+        assertEquals(1, locations.size());
+    }
+
+    @Test
+    @DisplayName("For a user with no location, when getting locations by range of date, then empty list must be returned.")
+    void givenAUserWithNoLocation_whenGetLocationsByRangeOfDate_thenAnEmptyListMustReturned() {
+        String userId = saveNewUserAndGetUserId();
+        Date lastDate = new Date();
+        Date twoDaysBefore = Date.from(lastDate.toInstant().minus(2, ChronoUnit.DAYS));
+
+        String from = DateUtil.format(twoDaysBefore);
+        String to = DateUtil.format(lastDate);
+        List<Location> locations = service.getLocationsByRange(userId, from, to);
+        assertEquals(0, locations.size());
     }
 
     private void assertUserEquality(User expected, User actual) {

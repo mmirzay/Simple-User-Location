@@ -4,12 +4,15 @@ import com.project.my.userlocation.entity.Location;
 import com.project.my.userlocation.entity.User;
 import com.project.my.userlocation.exception.NotFoundException;
 import com.project.my.userlocation.repository.UserRepository;
+import com.project.my.userlocation.utility.DateUtil;
 import com.project.my.userlocation.utility.MessageTranslatorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,5 +64,13 @@ public class UserService {
         getUserById(userId);
         Optional<Location> location = locationService.getLast(userId).stream().findFirst();
         return location.orElseThrow(() -> new NotFoundException(MessageTranslatorUtil.getText("service.user.lastLocation.get.notFound")));
+    }
+
+    @Transactional
+    public List<Location> getLocationsByRange(String userId, String from, String to) {
+        log.info("getting locations of user with id: [{}] by range from: [{}] to: [{}]", userId, from, to);
+        Date fromDate = DateUtil.parse(from);
+        Date toDate = DateUtil.parse(to);
+        return locationService.getLocationByRange(userId, fromDate, toDate);
     }
 }
