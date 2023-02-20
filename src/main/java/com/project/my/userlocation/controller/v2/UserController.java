@@ -26,7 +26,8 @@ public class UserController {
         User user = mapper.toEntity(userInDto);
         User result = service.addOrUpdate(user);
         UserOutDto userOutDto = mapper.toDto(result);
-        return new ResponseEntity<>(userOutDto, HttpStatus.CREATED);
+        HttpStatus httpStatus = userInDto.getUserId() == null ? HttpStatus.CREATED : HttpStatus.OK;
+        return new ResponseEntity<>(userOutDto, httpStatus);
     }
 
 }
